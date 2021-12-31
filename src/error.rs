@@ -1,7 +1,10 @@
 use std::fmt::Display;
 
+/// Error encountered during parsing and execution time
 pub enum Error {
     WrongParenthesis { instruction: usize },
+    SegmentationFault(String),
+    Overflow,
 }
 
 impl Display for Error {
@@ -10,6 +13,10 @@ impl Display for Error {
             Error::WrongParenthesis { instruction } => {
                 write!(f, "error wrong parenthesis on line {}", instruction)
             }
+            Error::SegmentationFault(reason) => {
+                write!(f, "segmentation fault: {}", reason)
+            }
+            Error::Overflow => write!(f, "overflow"),
         }
     }
 }

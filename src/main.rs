@@ -29,7 +29,9 @@ fn main() {
     match hello.parse() {
         Ok(instructions) => {
             let mut interpreter = Interpreter::new();
-            interpreter.exec(instructions);
+            if let Err(err) = interpreter.exec(instructions) {
+                println!("{}", err)
+            }
         }
         Err(err) => println!("{}", err),
     }

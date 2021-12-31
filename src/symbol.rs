@@ -1,3 +1,4 @@
+use crate::error::{Error, Result};
 use std::fmt::Display;
 
 /// The isntrucions of the brainfuck langugages
@@ -19,6 +20,8 @@ pub enum Instruction {
     StartLoop(usize), // The end of the loop
     /// ]
     EndLoop(usize), // The start of the loop
+    ///
+    End,
 }
 
 impl Display for Instruction {
@@ -32,6 +35,7 @@ impl Display for Instruction {
             Instruction::Input => write!(f, ", input"),
             Instruction::StartLoop(end) => write!(f, "[ {}", end),
             Instruction::EndLoop(start) => write!(f, "] {}", start),
+            Instruction::End => write!(f, "end"),
         }
     }
 }
@@ -46,8 +50,11 @@ impl Instructions {
         Self { instructions }
     }
 
-    pub fn get(&self, i: usize) -> Option<Instruction> {
-        self.instructions.get(i).cloned()
+    pub fn get(&self, i: usize) -> Result<Instruction> {
+        self.instructions
+            .get(i)
+            .cloned()
+            .ok_or_else(|| Error::SegmentationFault("instruction not found".to_string()))
     }
 }
 

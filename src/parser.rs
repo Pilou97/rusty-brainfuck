@@ -58,7 +58,7 @@ impl Parser for StringParser {
 
         let (opening, closing) = compute_jump(&instructions)?;
 
-        let instructions = instructions.iter().enumerate().fold(
+        let mut instructions = instructions.iter().enumerate().fold(
             Ok(Vec::<Instruction>::new()),
             |acc, (i, char)| match acc {
                 Err(err) => Err(err),
@@ -71,18 +71,16 @@ impl Parser for StringParser {
                         '.' => acc.push(Instruction::Output),
                         ',' => acc.push(Instruction::Input),
                         '[' => {
-                            if let Some(&closing) = opening.get(&i) {
-                                acc.push(Instruction::StartLoop(closing))
-                            } else {
-                                return Err(Error::WrongParenthesis { instruction: i });
-                            }
+                            let closing = *opening
+                                .get(&i)
+                                .ok_or(Error::WrongParenthesis { instruction: i })?;
+                            acc.push(Instruction::StartLoop(closing));
                         }
                         ']' => {
-                            if let Some(&starting) = closing.get(&i) {
-                                acc.push(Instruction::EndLoop(starting))
-                            } else {
-                                return Err(Error::WrongParenthesis { instruction: i });
-                            }
+                            let starting = *closing
+                                .get(&i)
+                                .ok_or(Error::WrongParenthesis { instruction: i })?;
+                            acc.push(Instruction::EndLoop(starting))
                         }
                         _ => {}
                     };
@@ -90,6 +88,8 @@ impl Parser for StringParser {
                 }
             },
         )?;
+
+        instructions.push(Instruction::End);
 
         Ok(Instructions::new(instructions))
     }
