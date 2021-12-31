@@ -1,18 +1,16 @@
 use std::collections::HashMap;
 
+use crate::error::{Error, Result};
 use crate::symbol::{Instruction, Instructions};
 
 pub trait Parser {
-    fn parse(&self) -> Result<Instructions, String>;
+    fn parse(&self) -> Result<Instructions>;
 }
 
 /// Hashmap of jump (from, to)
-
 type Jumps = HashMap<usize, usize>;
-
-fn compute_jump(instructions: &[char]) -> Result<(Jumps, Jumps), String> {
+fn compute_jump(instructions: &[char]) -> Result<(Jumps, Jumps)> {
     let mut stack = Vec::new();
-
     instructions.iter().enumerate().fold(
         Ok((HashMap::new(), HashMap::new())),
         |jumps, (index, &character)| match jumps {
@@ -29,7 +27,7 @@ fn compute_jump(instructions: &[char]) -> Result<(Jumps, Jumps), String> {
                         closing.insert(index, opening_bracket.1);
                         Ok((opening, closing))
                     } else {
-                        Err("Wrong Parenthesis".to_string())
+                        Err(Error::WrongParenthesis { instruction: index })
                     }
                 }
                 _ => Ok((opening, closing)),
@@ -50,7 +48,7 @@ impl StringParser {
 }
 
 impl Parser for StringParser {
-    fn parse(&self) -> Result<Instructions, String> {
+    fn parse(&self) -> Result<Instructions> {
         let instructions = self
             .raw
             .chars()
@@ -60,23 +58,38 @@ impl Parser for StringParser {
 
         let (opening, closing) = compute_jump(&instructions)?;
 
-        let instructions = instructions
-            .iter()
-            .enumerate()
-            .filter_map(|(i, char)| match char {
-                '>' => Some(Instruction::IncrementPtr { by: 1 }),
-                '<' => Some(Instruction::DecrementPtr { by: 1 }),
-                '+' => Some(Instruction::IncrementByte { by: 1 }),
-                '-' => Some(Instruction::DecrementByte { by: 1 }),
-                '.' => Some(Instruction::Output),
-                ',' => Some(Instruction::Input),
-                '[' => Some(Instruction::StartLoop(
-                    *opening.get(&i).expect(&format!("line {}", i)),
-                )),
-                ']' => Some(Instruction::EndLoop(*closing.get(&i).unwrap())),
-                _ => None,
-            })
-            .collect();
+        let instructions = instructions.iter().enumerate().fold(
+            Ok(Vec::<Instruction>::new()),
+            |acc, (i, char)| match acc {
+                Err(err) => Err(err),
+                Ok(mut acc) => {
+                    match char {
+                        '>' => acc.push(Instruction::IncrementPtr { by: 1 }),
+                        '<' => acc.push(Instruction::DecrementPtr { by: 1 }),
+                        '+' => acc.push(Instruction::IncrementByte { by: 1 }),
+                        '-' => acc.push(Instruction::DecrementByte { by: 1 }),
+                        '.' => acc.push(Instruction::Output),
+                        ',' => acc.push(Instruction::Input),
+                        '[' => {
+                            if let Some(&closing) = opening.get(&i) {
+                                acc.push(Instruction::StartLoop(closing))
+                            } else {
+                                return Err(Error::WrongParenthesis { instruction: i });
+                            }
+                        }
+                        ']' => {
+                            if let Some(&starting) = closing.get(&i) {
+                                acc.push(Instruction::EndLoop(starting))
+                            } else {
+                                return Err(Error::WrongParenthesis { instruction: i });
+                            }
+                        }
+                        _ => {}
+                    };
+                    Ok(acc)
+                }
+            },
+        )?;
 
         Ok(Instructions::new(instructions))
     }

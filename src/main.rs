@@ -3,6 +3,7 @@ use crate::{
     parser::{Parser, StringParser},
 };
 
+mod error;
 mod interpreter;
 mod parser;
 mod symbol;
@@ -25,8 +26,11 @@ fn main() {
         .to_string(),
     );
 
-    if let Ok(instructions) = hello.parse() {
-        let mut interpreter = Interpreter::new();
-        interpreter.exec(instructions);
+    match hello.parse() {
+        Ok(instructions) => {
+            let mut interpreter = Interpreter::new();
+            interpreter.exec(instructions);
+        }
+        Err(err) => println!("{}", err),
     }
 }
