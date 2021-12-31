@@ -8,10 +8,12 @@ struct Memory {
 }
 
 impl Memory {
+    /// Creates a new memory with 30k space
     fn new() -> Self {
         Self { memory: [0; 30000] }
     }
 
+    /// add an usize to the memory at the ith place
     fn add(&mut self, i: usize, value: u8) -> Result<u8> {
         self.memory
             .get_mut(i)
@@ -27,6 +29,7 @@ impl Memory {
             })
     }
 
+    /// Decreases the memory from value on the ith place
     fn decrement(&mut self, i: usize, value: u8) -> Result<u8> {
         self.memory
             .get_mut(i)
@@ -42,6 +45,7 @@ impl Memory {
             })
     }
 
+    /// Returns the value in memory
     fn get(&self, i: &usize) -> Result<u8> {
         self.memory
             .get(*i)
@@ -49,6 +53,7 @@ impl Memory {
             .map(|result| *result)
     }
 
+    /// Set the value in memory
     fn set(&mut self, i: &usize, value: u8) -> Result<()> {
         self.memory
             .get_mut(*i)
@@ -60,12 +65,13 @@ impl Memory {
 }
 
 pub struct Interpreter {
-    memory: Memory, // The memory of the brainfuck has 30k bytes
+    memory: Memory, // The memory of the brainfuck (see Memory)
     pointer: usize, // The pointer of the memory
     i: usize,       // The current position in the program
 }
 
 impl Interpreter {
+    /// Creates an interpreter, the pointer and the i start at 0, and the memory is empty
     pub fn new() -> Self {
         Self {
             memory: Memory::new(), // The memory is initialized to 0
@@ -74,6 +80,7 @@ impl Interpreter {
         }
     }
 
+    /// Interprets brainfuck instructions
     pub fn exec(&mut self, instructions: Instructions) -> Result<()> {
         loop {
             // Run until there is no more instructions
